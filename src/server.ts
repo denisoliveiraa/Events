@@ -1,6 +1,7 @@
 import fastify from "fastify";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
+import { generateSLug } from "./utils/generate-slug";
 
 const prisma = new PrismaClient({
   log: ['query'],
@@ -14,14 +15,27 @@ app.post('/events', async (request, reply) => {
   maximumAttendees: z.number().int().positive().nullable()
  })
 
- const data = createEventsSchema.parse(request.body)
+ const {
+  title,
+  details,
+  maximumAttendees
+ } = createEventsSchema.parse(request.body)
+const slug = generateSLug(data.title)
+const eventWithSameSlug = await.prisma.event.findUnique({
+  where: {
+    slug,
+  }
+})
 
+if(eventWithSameSlug !== null){
+  throw new Error('Another event with same title already exist')
+}
  const event = await prisma.event.create({
   data:{ 
-    title: data.title,
-    details: data.details,
-    maximumAttendees: data.maximumAttendees,
-    slug: new Date().toISOString()
+    title,
+    details,
+    maximumAttendees,
+    slug
   
   },
  })
